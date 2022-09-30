@@ -7,55 +7,67 @@ import (
 	"sort"
 )
 
-// 1. prepare empty struct to store the json data
-type Person struct {
-	Age  int
-	Name string
+//1. prepare the empty struct
+type Passenger struct {
+	Name string `json:"name"`
+	Age  int    `json:"age"`
 }
 
-// 2. parse json data into slice []Person
-func GetPassengerList() []Person {
-	// 2.1 read the json file
-	content, err := os.ReadFile("backend-titanic-test.json")
+// 2. parse json data into slice []Passenger
+func GetPassengerList() []Passenger {
+	// 2.1 load the json file
+	content, err := os.ReadFile("backend-titanic-test-1.json")
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 
-	// 2.2 unmarshal to decode json file
-	var persons []Person
-	err2 := json.Unmarshal(content, &persons)
+	// 2.2 unmarshal json file to slice
+	var passengers []Passenger
+	err2 := json.Unmarshal(content, &passengers)
 	if err2 != nil {
 		fmt.Println("Error JSON Unmarshalling")
 		fmt.Println(err2.Error())
 	}
-	return persons
+	return passengers
 }
 
-// 3. find most frequent age numbers
-func MostCommonAge(persons []Person) (mostCommonAge int, names []string) {
-	namesByAge := map[int][]string{}
-	// 3.1 group the name by it's common age
-	for _, p := range persons {
-		value, found := namesByAge[p.Age]
-		if !found {
-			value = []string{}
-		}
-		namesByAge[p.Age] = append(value, p.Name)
+// 3. group the name by its age
+func GroupByAge(passengers []Passenger) map[int][]int {
+	group := make(map[int][]int, 0)
+	// 3.1 iterate trough the passengers slice for every same age
+	for index, passenger := range passengers {
+		ageGroup := group[passenger.Age]
+		ageGroup = append(ageGroup, index)
+		group[passenger.Age] = ageGroup
 	}
-	// 3.2 compare the group size based on how many name it has
-	for age, nameList := range namesByAge {
-		if len(nameList) > len(names) {
-			mostCommonAge, names = age, nameList
+	return group
+}
+
+// 4. find the most frequent age numbers
+func FindMostCommonAge(ageGroups map[int][]int) []int {
+	mostFrequentAges := make([]int, 0)
+	biggestGroupSize := 0
+
+	//  4.1 comparing the group size based on it's common age
+	for age, ageGroup := range ageGroups {
+		// is most frequent age
+		if biggestGroupSize < len(ageGroup) {
+			biggestGroupSize = len(ageGroup)
+			mostFrequentAges = []int{age}
+			// 4.2 split the array if there is multiple group with the same maximum fequency of the age
+		} else if biggestGroupSize == len(ageGroup) { // is one of the most frequent age
+			mostFrequentAges = append(mostFrequentAges, age)
 		}
+		// we assume that there always be group with most frequent age, so we do nothing if there is none
 	}
-	return mostCommonAge, names
+	return mostFrequentAges
 }
 
 func main() {
-	// call the slice from parsed json file
+	// load the slice
 	passengers := GetPassengerList()
 
-	// sort it's name apabethically
+	// sort the slice by its name
 	sort.Slice(passengers, func(i, j int) bool {
 		if passengers[i].Age == passengers[j].Age {
 			return passengers[i].Name < passengers[j].Name
@@ -63,12 +75,19 @@ func main() {
 		return passengers[i].Age < passengers[j].Age
 	})
 
-	// find the most common age from sorted slice
-	age, names := MostCommonAge(passengers)
+	// age => []position
+	// Length of the array count as the number of occurences
+	ageGrouper := GroupByAge(passengers)
 
-	// print most common age occured from total 93 passanger
-	fmt.Printf("most common age : %d\n", age)
+	// find most frequent age between group
+	mostFrequentAges := FindMostCommonAge(ageGrouper)
 
-	// print the names based on its common age
-	fmt.Println(names)
+	// print the passenger with most frequent-common age
+	for _, age := range mostFrequentAges {
+		fmt.Print("[")
+		for _, passengerIndex := range ageGrouper[age] {
+			fmt.Print(" ", passengers[passengerIndex].Name, " ")
+		}
+		fmt.Print("]")
+	}
 }
