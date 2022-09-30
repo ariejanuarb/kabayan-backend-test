@@ -68,7 +68,7 @@ output :
 ````
 [ Alisa  Cash  Clay  Cline  Daphne  Hester  Irwin  Madden  Osborne  Sonja ]
 ````
-#### scenario 2 : 2 age number with same maximum frequency
+#### scenario 2 : multiple age number with same maximum frequency
 json input : "backend-titanic-test-1.json"
 
 output :
